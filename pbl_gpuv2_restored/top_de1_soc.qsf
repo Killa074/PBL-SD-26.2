@@ -93,6 +93,9 @@ set_location_assignment PIN_AA14 -to KEY[0]
 set_location_assignment PIN_AA15 -to KEY[1]
 set_location_assignment PIN_W15 -to KEY[2]
 set_location_assignment PIN_Y16 -to KEY[3]
+set_global_assignment -name HEX_FILE tiles.hex
+set_global_assignment -name HEX_FILE tilemap.hex
+set_global_assignment -name HEX_FILE palette.hex
 set_global_assignment -name VERILOG_FILE vga_timing.v
 set_global_assignment -name VERILOG_FILE top_de1_soc.v
 set_global_assignment -name VERILOG_FILE background_engine.v
