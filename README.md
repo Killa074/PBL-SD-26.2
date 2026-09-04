@@ -194,38 +194,8 @@ sprite_color_index      background_color_index      polygon_color_index
 composição em tempo real das três camadas (background, sprites e polígonos
 com double buffer).
 
-## 6. Limitações e funcionalidades não atendidas
 
-As limitações abaixo foram identificadas a partir da leitura direta do
-código RTL atual e devem ser revisadas/confirmadas pela equipe antes da
-entrega.
-
-### 6.1 Seleção de paleta por sprite armazenada mas não aplicada
-O atributo `sprite_palette` é escrito e armazenado normalmente, mas o
-`sprite_memory.v` atual não implementa múltiplos bancos de paleta — a
-conversão final de cor sempre passa pela única paleta global de
-`palette.v`. Multiplicar paletas por sprite exigiria estender
-`sprite_memory`/`palette` para indexação por banco.
-
-### 6.2 `KEY[0]` também interrompe o `pixel_clock`
-O registrador `pixel_clock` só alterna (`~pixel_clock`) quando `KEY[0]`
-está em nível alto; quando pressionado (nível baixo), ele é forçado a
-`1'b0` e para de alternar. Isso significa que segurar o botão de reset
-paralisa completamente a geração de vídeo (`VGA_CLK` incluso), não apenas
-os registradores internos.
-
-### 6.3 `sprite_memory.v` atualmente contém apenas 1 padrão gráfico
-A memória de sprites está dimensionada para 256 posições (16×16 pixels de
-um único padrão). Qualquer `pattern_index` diferente de `8'd0` retorna
-transparente (`color_index = 8'd0`). Múltiplos padrões de sprite exigiriam
-aumentar a memória e o `sprite.hex` carregado.
-
-### 6.4 Memórias inicializadas apenas uma vez via `$readmemh`
-`tile_memory.v`, `sprite_memory.v`, `palette.v` e o conteúdo inicial de
-`tilemap_memory.v` são carregados apenas em bloco `initial`. Apenas o
-tilemap pode ser reescrito dinamicamente, via `tilemap_write_enable`.
-
-## 7. Como sintetizar e rodar
+## 6. Como sintetizar e rodar
 
 1. Abra o Intel Quartus Prime 25.1std.0 (SC Lite Edition).
 2. Crie um novo projeto apontando para a placa **DE1-SoC**.
@@ -237,7 +207,7 @@ tilemap pode ser reescrito dinamicamente, via `tilemap_write_enable`.
 7. Grave o bitstream na FPGA (Programmer).
 8. Conecte um monitor VGA à placa e utilize os controles da seção 8.
 
-## 8. Controles de demonstração na placa
+## 7. Controles de demonstração na placa
 
 | Entrada | Função |
 |---------|--------|
