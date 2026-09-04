@@ -219,7 +219,7 @@ com double buffer).
 | `SW[3]` | Flip horizontal do sprite 0 |
 | `SW[4]` | Flip vertical do sprite 0 |
 | `SW[5]` | `1` = modo sprite (move sprite 0 com `SW[9:6]`); `0` = modo polígono (move polígonos  com `SW[9:6]`) |
-| `SW[9:6]` | Direção do movimento ((sprite: `1000` direita, `0100` esquerda, `0010` baixo, `0001` cima) ou (polígono: `1000` Triangulo direita, `0100` Triangulo esquerda, `0010` Quadrado direita, `0001` Quadrado esquerda), conforme `SW[5]`) |
+| `SW[9:6]` | Direção do movimento ((sprite: `1000` direita, `0100` esquerda, `0010` baixo, `0001` cima) ou (polígono: `1000` Triangulo direita, `0100` Triangulo esquerda, `0010` Retangulo direita, `0001` Retangulo esquerda), conforme `SW[5]`) |
 
 > Conforme o enunciado, botões/chaves/LEDs são usados exclusivamente para
 > demonstração neste entregável, e não substituem a futura interface MMIO
