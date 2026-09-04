@@ -199,7 +199,7 @@ com double buffer).
 
 1. Abra o Intel Quartus Prime 25.1std.0 (SC Lite Edition).
 2. Crie um novo projeto apontando para a placa **DE1-SoC**.
-3. Adicione todos os arquivos `.v` deste repositório ao projeto.
+3. Clique em 'Project' -> 'Restore Archived Project' e selecione o arquivo 'pbl_gpu_final_Fase1_Bufferizado.qar' baixado neste repositorio, dentro da pasta 'Versão Atual'
 4. Defina `top_de1_soc.v` como o módulo top-level.
 5. Aplique o arquivo de restrições de pinos (`.qsf`/`.sdc`) mapeando VGA,
    `KEY`, `SW` e `CLOCK_50`.
