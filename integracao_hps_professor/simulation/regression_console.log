@@ -1,0 +1,44 @@
+PASS test_mailbox: protocol, limits, readback, timeout, partial error, sequence, C scene
+Exportados 2084 comandos do MESMO gerador usado na HPS
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.001s
+
+OK
+Questa Altera Starter FPGA Edition-64 vlog 2025.2 Compiler 2025.05 May 31 2025
+Start time: 17:03:15 on Oct 09,2026
+vlog -sv -work simulation/work C:\Users\User\Desktop\Programas\PBL SD 26.2\PBL-SD-26.2\integracao_hps_professor\rtl\ghrd_top.v C:\Users\User\Desktop\Programas\PBL SD 26.2\PBL-SD-26.2\integracao_hps_professor\rtl\gpu_avmm_endpoint.v C:\Users\User\Desktop\Programas\PBL SD 26.2\PBL-SD-26.2\integracao_hps_professor\rtl\gpu_buttons.v C:\Users\User\Desktop\Programas\PBL SD 26.2\PBL-SD-26.2\integracao_hps_professor\rtl\gpu_cpu.v C:\Users\User\Desktop\Programas\PBL SD 26.2\PBL-SD-26.2\integracao_hps_professor\rtl\gpu_graphics.v C:\Users\User\Desktop\Programas\PBL SD 26.2\PBL-SD-26.2\integracao_hps_professor\rtl\gpu_host.v C:\Users\User\Desktop\Programas\PBL SD 26.2\PBL-SD-26.2\integracao_hps_professor\rtl\gpu_mailbox.v C:\Users\User\Desktop\Programas\PBL SD 26.2\PBL-SD-26.2\integracao_hps_professor\rtl\gpu_system.v C:\Users\User\Desktop\Programas\PBL SD 26.2\PBL-SD-26.2\integracao_hps_professor\rtl\top_hps.v C:\Users\User\Desktop\Programas\PBL SD 26.2\PBL-SD-26.2\integracao_hps_professor\rtl\top_phase2.v professor/soc_system/synthesis/submodules/soc_system_onchip_memory2_0.v C:\Users\User\Desktop\Programas\PBL SD 26.2\PBL-SD-26.2\integracao_hps_professor\tests\tb_gpu_capture.sv C:\Users\User\Desktop\Programas\PBL SD 26.2\PBL-SD-26.2\integracao_hps_professor\tests\tb_gpu_cpu.sv C:\Users\User\Desktop\Programas\PBL SD 26.2\PBL-SD-26.2\integracao_hps_professor\tests\tb_gpu_endpoint.sv C:\Users\User\Desktop\Programas\PBL SD 26.2\PBL-SD-26.2\integracao_hps_professor\tests\tb_gpu_graphics.sv C:\Users\User\Desktop\Programas\PBL SD 26.2\PBL-SD-26.2\integracao_hps_professor\tests\tb_gpu_host.sv C:\Users\User\Desktop\Programas\PBL SD 26.2\PBL-SD-26.2\integracao_hps_professor\tests\tb_gpu_mailbox_ram.sv C:\Users\User\Desktop\Programas\PBL SD 26.2\PBL-SD-26.2\integracao_hps_professor\tests\tb_gpu_mailbox.sv C:\Users\User\Desktop\Programas\PBL SD 26.2\PBL-SD-26.2\integracao_hps_professor\tests\tb_gpu_system.sv 
+** Note: (vlog-220) 'C:/altera_lite/25.1std/questa_fse/win64/../modelsim.ini' is used as the ini file.
+-- Compiling module ghrd_top
+-- Compiling module gpu_avmm_endpoint
+-- Compiling module gpu_buttons
+-- Compiling module gpu_cpu
+-- Compiling module gpu_graphics
+-- Compiling module gpu_host
+-- Compiling module gpu_mailbox
+-- Compiling module gpu_system
+-- Compiling module top_hps
+-- Compiling module top_phase2
+-- Compiling module soc_system_onchip_memory2_0
+-- Compiling module tb_gpu_capture
+-- Compiling module tb_gpu_cpu
+-- Compiling module tb_gpu_endpoint
+-- Compiling module tb_gpu_graphics
+-- Compiling module tb_gpu_host
+-- Compiling module tb_gpu_mailbox_ram
+-- Compiling module tb_gpu_mailbox
+-- Compiling module tb_gpu_system
+
+Top level modules:
+	ghrd_top
+	top_hps
+	top_phase2
+	tb_gpu_capture
+	tb_gpu_cpu
+	tb_gpu_endpoint
+	tb_gpu_graphics
+	tb_gpu_host
+	tb_gpu_mailbox_ram
+	tb_gpu_system
+End time: 17:03:15 on Oct 09,2026, Elapsed time: 0:00:00
+Errors: 0, Warnings: 0

@@ -1,226 +1,208 @@
-# Núcleo do Coprocessador Gráfico em FPGA
+# PBL 2 — Coprocessador gráfico em FPGA
 
-Núcleo de um coprocessador gráfico descrito em Verilog RTL, inspirado na
-arquitetura de consoles de 16 bits, com suporte a plano de fundo em tiles,
-sprites independentes e rasterização de polígonos. Desenvolvido como
-Problema #1 (2026.2) da disciplina MI — Sistemas Digitais, Departamento de
-Tecnologia / Área de Eletrônica, UEFS.
 
-O núcleo é preparado para, em etapas posteriores, ser controlado por um
-driver Linux em Assembly ARM (via MMIO) e utilizado por uma aplicação de
-jogo em linguagem C
+O projeto implementa um sistema gráfico programável na DE1-SoC. O Linux da HPS recebe comandos do usuário e se comunica com a FPGA por uma RAM compartilhada. Na FPGA, o controle pode executar um programa de ISA própria ou consumir comandos gráficos enviados pelo software. O motor gráfico transforma a configuração da cena em pixels e mantém a saída VGA funcionando de forma independente.
 
-> Desenvolvedores: Jones Becelar e Matheus Coelhos
 
----
+## Guia de execução e avaliação
 
-## Sumário
+Este documento orienta a gravação do circuito na DE1-SoC e a execução de duas demonstrações da fase 2:
 
-1. [Requisitos funcionais e não funcionais](#1-requisitos-funcionais-e-não-funcionais)
-2. [Arquitetura proposta e justificativa](#2-arquitetura-proposta-e-justificativa)
-3. [Especificação de hardware](#3-especificação-de-hardware)
-4. [Demonstração em hardware](#4-demonstração-em-hardware)
-5. [Análise de recursos, timing e desempenho](#5-análise-de-recursos-timing-e-desempenho)
-6. [Limitações e funcionalidades não atendidas](#6-limitações-e-funcionalidades-não-atendidas)
-7. [Como sintetizar e rodar](#7-como-sintetizar-e-rodar)
-8. [Controles de demonstração na placa](#8-controles-de-demonstração-na-placa)
+| Demonstração | Comando na HPS | O que demonstra |
+| --- | --- | --- |
+| Cena controlada por comandos externos | `sudo ./gpuctl --fpga demo` | O programa C envia comandos gráficos pela mailbox; a FIFO da FPGA alimenta o motor gráfico. |
+| Programa da ISA do coprocessador | `sudo ./gpuctl --fpga load ../programs/demo.hex` | A HPS carrega instruções de 32 bits; a CPU da FPGA busca e executa o programa até `HALT`. |
 
----
+**As duas demonstrações usam a mailbox como transporte HPS–FPGA.** A diferença é o conteúdo enviado e quem executa a sequência: comandos porta/dado no primeiro caso, programa da ISA no segundo.
 
-## 1. Requisitos funcionais e não funcionais
+O projeto desta entrega está em **`integracao_hps_professor/`**. Outras pastas de versões, se presentes no repositório, não são necessárias para este roteiro.
 
-### 1.1 Requisitos funcionais
+## 1. Arquivos e ambiente
 
-| ID | Requisito | Módulo(s) responsável(is) | Situação |
-|----|-----------|-----------------------------|----------|
-| RF01 | Gerar sinal de vídeo VGA 640×480 a ~60 Hz | `vga_timing.v` | Atendido |
-| RF02 | Operar cena em resolução lógica 320×240, com duplicação 2×2 na saída | `top_de1_soc.v` (`logical_x = pixel_x[9:1]`, `logical_y = pixel_y[8:1]`) | Atendido |
-| RF03 | Renderizar plano de fundo em tilemap 40×30, tiles de 8×8, ≥256 padrões | `background_engine.v`, `tilemap_memory.v`, `tile_memory.v` | Atendido |
-| RF04 | Permitir alteração do tile associado a cada posição do tilemap em tempo real | `tilemap_memory.v` (porta de escrita) + máquina de estados de patch em `top_de1_soc.v` (`KEY[1]`) | Atendido (demo grava um tile fixo em uma região 6×6) |
-| RF05 | Permitir deslocamento horizontal e vertical do background | `top_de1_soc.v` (registradores `scroll_x`/`scroll_y`) + `background_engine.v` (wrap) | Atendido |
-| RF06 | Suportar no mínimo 32 sprites de 16×16 pixels | `sprite_engine.v` (32 bancos de atributos), `sprite_memory.v` | Atendido |
-| RF07 | Cada sprite com posição X/Y, índice de padrão, habilitação, prioridade, espelhamento H/V, seleção de paleta | `sprite_engine.v` | Atendido (seleção de paleta armazenada mas não aplicada — ver 6.1) |
-| RF08 | Definir e aplicar prioridade entre sprites sobrepostos | `sprite_engine.v` (maior prioridade vence; empate → maior índice vence) | Atendido |
-| RF09 | Rasterizar retângulos e triângulos preenchidos com aritmética inteira | `polygon_engine.v` (teste de limites para retângulo; *edge function* com aritmética sinalizada para triângulo) | Atendido |
-| RF10 | Compor background, polígonos e sprites por pixel, com ao menos 3 níveis de prioridade | `top_de1_soc.v` (compositor: sprite > polígono > background) | Atendido |
-| RF11 | Aplicar transparência (índice de cor 0) antes da seleção do pixel final | `sprite_engine.v` (`pixel_visible`) | Atendido |
-| RF12 | Converter índice de 8 bits em RGB por paleta programável de 256 entradas | `palette.v` (`palette_with_sprite.hex`) | Atendido |
-| RF13 | Permitir troca de cena de polígonos sem artefatos visuais (double buffer) | `top_de1_soc.v` (`rect_left_buffer0/1`, `tri_left_buffer0/1`, `active_polygon_buffer`, `polygon_swap_lock`) | Atendido |
-| RF14 | Permitir demonstração via botões/chaves/LEDs da placa | `top_de1_soc.v` (mapeamento `KEY`/`SW`, seção 8) | Atendido |
+Arquivos principais, a partir da raiz do repositório:
 
-### 1.2 Requisitos não funcionais
-
-| ID | Requisito | Observação a partir do código |
-|----|-----------|----------------------------------|
-| RNF01 | Núcleo descrito em Verilog, com arquitetura modular (controle, datapath, memórias, motores gráficos, saída de vídeo separados) | Confirmado: cada camada tem módulo próprio (`background_engine`, `sprite_engine`, `polygon_engine`), memórias isoladas (`tile_memory`, `tilemap_memory`, `sprite_memory`) e paleta separada (`palette`) |
-| RNF02 | Registradores e memórias com estratégia definida de reset/inicialização | `KEY[0]` funciona como reset síncrono ativo em nível baixo (`reset_n`), zerando registradores de timing, sprites e buffers de polígono a cada `posedge`. As memórias ROM/RAM são inicializadas via `$readmemh` em bloco `initial` |
-| RNF03 | Saída sem instabilidade, perda de sincronismo ou pixels indefinidos após inicialização | `VGA_R/G/B` são forçados a `8'h00` fora da área ativa (`active_video`); sincronismo gerado por contadores livres em `vga_timing.v` |
-| RNF04 | Núcleo, comandos e mapa de registradores projetados sem dependência de uma cena/jogo específico | Parcialmente atendido — o **núcleo** (engines) é agnóstico de cena, mas o **top-level de demonstração** ainda contém valores fixos (posição inicial do sprite, cor/posição de referência de retângulo e triângulo) |
-| RNF05 | Uso de aritmética inteira em todo o datapath (sem ponto flutuante) | Confirmado: `polygon_engine.v` usa apenas `reg signed`/`wire signed` inteiros na *edge function* |
-
-## 2. Arquitetura proposta e justificativa
-
-### 2.1 Visão geral do pipeline
-
-```
-CLOCK_50 (50 MHz)
-    │  (toggle flip-flop, gated por KEY[0])
-    ▼
-pixel_clock (25 MHz)
-    │
-    ▼
-vga_timing ──────────────────────────► hsync, vsync, active_video
-    │  (pixel_x, pixel_y — 640×480)
-    ▼
-logical_x, logical_y (320×240, pixel_x[9:1] / pixel_y[8:1])
-    │
-    ├─────────────────────────────┬───────────────────────────┐
-    ▼                             ▼                           ▼
-sprite_engine              background_engine             world_x, world_y
-(usa logical_x/y           (usa logical_x/y +            (logical + scroll,
- SEM scroll —               scroll_x/y internamente,      com wrap 320×240,
- sprite “preso à tela”)      próprio wrap)                 calculado no top)
-    │                             │                           │
-    │                             │                           ▼
-    │                             │                     polygon_engine
-    │                             │                     (retângulo + triângulo,
-    │                             │                      “presos ao mapa”)
-    ▼                             ▼                           ▼
-sprite_color_index      background_color_index      polygon_color_index
-    └─────────────────────────────┴───────────────────────────┘
-                                  ▼
-                            Compositor
-                (sprite > polígono > background)
-                                  ▼
-                              palette
-                    (índice 8 bits → RGB24)
-                                  ▼
-                         VGA_R / VGA_G / VGA_B
-                    (forçado a 0 fora de active_video)
+```text
+integracao_hps_professor/
+├── pbl_hps_professor.qpf              Projeto a abrir no Quartus
+├── pbl_hps_professor.qsf              Fontes, dispositivo e pinagem
+├── hps_ddr_locations.qsf              Restrições de pinos DDR
+├── hps_gpu.sdc                        Restrições de clock da integração
+├── professor/                        IPs e HDL HPS adaptados
+├── rtl/                              Circuito do coprocessador e mailbox
+├── assets/                           Memórias iniciais de gráficos
+├── output_files/
+│   └── pbl_hps_professor.sof          Circuito compilado para gravar
+├── software/
+│   ├── Makefile                      Compilação na HPS
+│   ├── gpuctl.c                      Interface de comandos
+│   ├── mailbox.c                     Protocolo de comunicação
+│   ├── mmio_arm.S                    Acessos e barreiras no ARM
+│   └── scene.c                       Cena da demonstração externa
+└── programs/
+    ├── demo.asm                      Programa fonte da ISA
+    └── demo.hex                      Programa montado, pronto para carregar
 ```
 
-### 2.2 Justificativa das decisões de arquitetura
+Ambiente necessário:
 
-- **Sprites em espaço de tela vs. polígonos em espaço de mundo**: o
-  `sprite_engine` recebe `logical_x`/`logical_y` diretamente, **sem** o
-  deslocamento de scroll — ou seja, sprites se comportam como elementos de
-  HUD/jogador, fixos em relação à tela, independente do scroll do cenário.
-  Já o `polygon_engine` recebe `world_x`/`world_y` (coordenada lógica somada
-  ao scroll, com wrap), fazendo os polígonos se moverem junto com o mapa,
-  como se fossem objetos do cenário. Essa distinção foi uma escolha
-  deliberada para cobrir os dois casos de uso mais comuns em jogos 2D
-  (personagem fixo na tela vs. objeto preso ao mundo).
-- **Prioridade fixa no compositor** (sprite > polígono > background):
-  resolvida por um `assign` combinacional simples (`sprite_visible ? ... :
-  polygon_visible ? ... : background_color_index`), sem custo de ordenação
-  em tempo de execução, atendendo ao mínimo de 3 níveis de prioridade
-  exigido.
-- **Paleta indexada de 8 bits** em vez de RGB direto por pixel: reduz a
-  largura de dados armazenada por tile/sprite/polígono (1 byte por pixel em
-  vez de 3), ao custo de uma tabela de consulta (`palette.v`) antes da
-  saída.
-- **Resolução lógica 320×240 com duplicação 2×2**: simplifica os motores
-  gráficos e reproduz a estética de consoles 16-bits, mantendo
-  compatibilidade com VGA 640×480 @ 60 Hz sem exigir um segundo modo de
-  vídeo.
-- **Double buffer apenas para polígonos**: implementado com dois pares de
-  registradores (`rect_left_buffer0/1`, `tri_left_buffer0/1`) e um bit de
-  buffer ativo (`active_polygon_buffer`), trocado de forma atômica por
-  `KEY[3]` com trava (`polygon_swap_lock`) para evitar múltiplas trocas em
-  um único toque. Essa camada foi escolhida para o double buffer porque é a
-  mais suscetível a trocas de cena em bloco (ex.: telas de menu/efeitos);
-  sprites e tiles já são atualizados de forma incremental, célula a célula,
-  sem esse risco.
-- **Edge function com aritmética inteira sinalizada** para triângulos: evita
-  qualquer divisão ou ponto flutuante; o teste de sinal dos três produtos
-  vetoriais (`edge0`, `edge1`, `edge2`) funciona independentemente da ordem
-  ou orientação dos vértices.
-- **Reset único (`KEY[0]`) compartilhado por todo o datapath**: simplifica a
-  demonstração (um único botão reinicializa scroll, sprites, buffers de
-  polígono e a máquina de estados de edição do tilemap), mas também corta o
-  próprio `pixel_clock` enquanto pressionado — importante explicar isso na
-  demonstração ao vivo, para não ser confundido com perda de sincronismo.
+- Placa DE1-SoC com FPGA Cyclone V 5CSEMA5F31C6.
+- Alimentação, conexão USB-Blaster, monitor VGA e cabo de rede.
+- Cartão SD do laboratório com Linux e inicialização HPS compatíveis com a base do professor.
+- Computador do laboratório com Quartus Programmer e cliente SSH/SCP.
+- GCC e `make` no Linux da HPS, além de permissão para executar `gpuctl` com `sudo`.
 
-## 3. Especificação de hardware
+Neste guia, **PC** significa o computador Linux do laboratório. **HPS** significa o Linux executado na placa, acessado por SSH. Os comandos de acesso à FPGA devem ser executados na HPS.
 
-| Item | Especificação |
-|------|----------------|
-| Placa | Terasic **DE1-SoC** |
-| FPGA | Intel/Altera **Cyclone V** (5CSEMA5F31C6) |
-| Clock de entrada | `CLOCK_50` — 50 MHz (oscilador da placa) |
-| Pixel clock (VGA) | 25 MHz, gerado por flip-flop de toggle a partir de `CLOCK_50`, gated por `KEY[0]` |
-| Saída de vídeo | VGA (DAC de vídeo on-board da DE1-SoC), 640×480 @ 60 Hz |
-| Entradas usadas na demonstração | `KEY[3:0]`, `SW[9:0]` |
-| Ferramenta de síntese | Intel Quartus Prime **25.1std.0** (Build 1129, SC Lite Edition) |
+A integração utiliza a **ponte principal HPS-to-FPGA**, com RAM compartilhada de 64 KiB em **`0xC0000000`**. A janela lightweight `0xFF200000` não é a interface gráfica desta versão. O software usa `/dev/mem` e `mmap`; não exige um módulo próprio de kernel nem um dispositivo `/dev/gpu`.
+
+## 2. Gravar o circuito na FPGA — no PC
+
+1. Extraia o ZIP para uma pasta de sua escolha.
+2. Abra a pasta integracao_hps_professor
+3. Abra pbl_hps_professor.qpf no Quartus.
+5. Conecte alimentação, USB-Blaster, rede e monitor VGA. Preserve o cartão SD já preparado pelo laboratório.
+6. Abra **Tools > Programmer**.
+7. Em **Hardware Setup**, selecione o USB-Blaster correspondente à placa.
+8. Em **Hardware Setup**, selecione **Auto Detect** e **5CSEMA5**. Na linha do dispositivo FPGA Cyclone V, selecione **Change File** ou **Add File**, conforme a configuração do Programmer, e escolha:
+   ```text
+   integracao_hps_professor/output_files/pbl_hps_professor.sof
+   ```
+9. Marque **Program/Configure** na linha da FPGA. Não selecione o componente HPS como destino do SOF.
+10. Clique em **Start** e aguarde **100% (Successful)**.
+
+O SOF fornecido já está compilado. **Não é necessário recompilar para executar as demonstrações.** A programação por SOF é volátil: depois de desligar a placa, o circuito precisa ser carregado novamente.
+
+### Condições antes de acessar a FPGA
+
+Antes do primeiro `gpuctl --fpga`, o SOF correto deve estar configurado, a HPS inicializada e a ponte **principal** HPS-to-FPGA habilitada. 
+
+As pontes são pré configuradas pelo laboratorio.
 
 
+### Se for necessário recompilar
 
-## 5. Análise de recursos, timing e desempenho
+Use o projeto `pbl_hps_professor.qpf`, preferencialmente em um caminho sem espaços e acentos, e execute **Processing > Start Compilation**. A compilação fornecida utilizou Quartus Prime 25.1 Standard/Lite com suporte a Cyclone V.
+
+## 3. Transferir o software e o programa da ISA — no PC Linux
+
+Obtenha os 3 ultimos numeros do IP da placa e as credenciais utilizadas no laboratório. Os exemplos usam o usuário `aluno`; ajuste-o caso a conta seja outra. Substitua `IP_DA_PLACA` pelo endereço real. 
+
+No terminal do PC, a partir da raiz deste repositório, sendo essa **integracao_hps_professor**:
+
+```sh
+ssh aluno@IP_DA_PLACA 'mkdir -p ~/pbl_fase2_entrega'
+scp -O -r software programs aluno@IP_DA_PLACA:~/pbl_fase2_entrega/
+ssh aluno@IP_DA_PLACA
+```
+
+O primeiro SSH cria a pasta remota e retorna. O `scp` transfere os arquivos. O último SSH abre a sessão na HPS.
+
+Não é necessário copiar os arquivos do Quartus para a HPS: para estas demos, basta transferir `software/` e `programs/`. O circuito e as memórias iniciais de gráficos já estão no SOF.
+
+## 4. Compilar e verificar a comunicação — na HPS, por SSH
+
+A partir deste ponto, execute os comandos **no terminal remoto da placa**.
+
+**Garanta que a placa esteja ligada e com SOF carregado!**
+
+```sh
+cd ~/pbl_fase2_entrega/software
+make -B
+```
+
+O `-B` força a recompilação para o processador da HPS, evitando reutilizar um binário de outra máquina. O executável produzido chama-se **`gpuctl`**, sem extensão. Os arquivos `.exe`, se presentes, são executáveis Windows e não devem ser usados na placa.
+
+Se a compilação terminar sem erros:
+
+```sh
+sudo ./gpuctl --fpga status
+```
+
+Resultado esperado:
+
+- Identificação `GPU3 id=47505533`.
+- Leitura de `CONTROL`, `STATUS`, `PC`, `IR`, `OUT_COUNT`, `FIFO_FREE`, `FRAME_COUNT` e `ERROR`.
+- `ERROR = 0x00000000 (0)` no estado sem falhas.
+- Mensagem `OK` ao final.
+
+Os demais valores variam conforme o estado do circuito e as execuções anteriores. SSH funcionando, isoladamente, não comprova que a ponte e a mailbox estão disponíveis.
 
 
-| Recurso | Utilizado | Disponível na Cyclone V (5CSEMA5F31C6) | % |
-|---------|-----------|------------------------------------------|---|
-| Logic utilization (ALMs) | 3.301 | 32.070 | 10% |
-| Registradores totais | 4.104 | — | — |
-| Pinos totais | 44 | 457 | 10% |
-| Memória embarcada (bits) | 0 | 4.065.280 | 0% |
-| Blocos DSP | 3 | 87 | 3% |
-| PLLs | 0 | 6 | 0% |
-| DLLs | 0 | 4 | 0% |
+## 5. Demonstração A — cena por comandos externos / mailbox
 
-**Observações a partir dos números acima:**
+Na HPS, dentro de `~/pbl_fase2_entrega/software`:
 
-- **Utilização de ALMs baixa (10%)**: há bastante margem para crescer o
-  projeto (mais sprites ativos simultaneamente, mais primitivas de
-  polígono, paletas por sprite, etc.) sem esgotar a lógica disponível da
-  Cyclone V.
-- **Memória embarcada em 0%**: nenhuma das memórias do projeto
-  (`tile_memory`, `sprite_memory`, `tilemap_memory`, `palette`) foi mapeada
-  para blocos de memória dedicados (M10K); o Quartus sintetizou os arrays
-  `reg` como lógica distribuída nos ALMs. Isso explica parte do consumo de
-  ALMs e é uma oportunidade de otimização: inferir memória embarcada
-  explicitamente tende a reduzir a utilização de lógica.
-- **3 blocos DSP utilizados**: coerente com as multiplicações de 12×12 bits
-  da *edge function* do `polygon_engine.v` (uma para cada aresta do
-  triângulo), que o sintetizador mapeou para multiplicadores dedicados em
-  vez de lógica genérica.
-- **Nenhum PLL utilizado**: o `pixel_clock` de 25 MHz é gerado por um
-  flip-flop de toggle simples a partir de `CLOCK_50`, e não por um PLL
-  dedicado — funciona, mas não garante a mesma precisão/jitter de um clock
-  gerado por PLL (ex.: 25,175 MHz do padrão VGA exato).
+```sh
+sudo ./gpuctl --fpga demo
+sudo ./gpuctl --fpga status
+```
 
+O comando `demo` prepara o modo passivo, envia a paleta, os padrões gráficos e a configuração da cena pela mailbox, solicita `PRESENT` e aguarda a apresentação do quadro.
 
-**Desempenho observado**: 60 quadros por segundo, sem tearing, com
-composição em tempo real das três camadas (background, sprites e polígonos
-com double buffer).
+No monitor VGA, devem aparecer:
 
+- Fundo de grama, rio, caminho e bordas de pedra.
+- Dois personagens representados por sprites.
+- Uma casa formada por um retângulo e um triângulo.
 
-## 6. Como sintetizar e rodar
+O terminal deve terminar cada comando com `OK`, e o status deve indicar `ERROR=0`. Esta cena vem do gerador em `software/scene.c`; 
 
-1. Abra o Intel Quartus Prime 25.1std.0 (SC Lite Edition).
-2. Crie um novo projeto apontando para a placa **DE1-SoC**.
-3. Clique em 'Project' -> 'Restore Archived Project' e selecione o arquivo 'pbl_gpu_final_Fase1_Bufferizado.qar' baixado neste repositorio, dentro da pasta 'Versão Atual'
-4. Defina `top_de1_soc.v` como o módulo top-level.
-5. Aplique o arquivo de restrições de pinos (`.qsf`/`.sdc`) mapeando VGA,
-   `KEY`, `SW` e `CLOCK_50`.
-6. Compile o projeto (Start Compilation) e verifique o relatório de síntese.
-7. Grave o bitstream na FPGA (Programmer).
-8. Conecte um monitor VGA à placa e utilize os controles da seção 8.
+### Alterações interativas opcionais
 
-## 7. Controles de demonstração na placa
+Execute um comando por vez e observe a saída VGA:
 
-| Entrada | Função |
-|---------|--------|
-| `KEY[0]` | Reset global síncrono (ativo em nível baixo) — também interrompe o `pixel_clock` enquanto pressionado (ver 6.2) |
-| `KEY[1]` | Entra/alterna o modo de edição dinâmica de uma região 6×6 do tilemap |
-| `KEY[2]` | Habilita o scroll do background (mantido em nível baixo enquanto ativo) |
-| `KEY[3]` | Modo polígono (`SW[5]=0`): move retângulo/triângulo do buffer ativo com `SW[9:6]`, ou troca de buffer se `SW[9:6]=0000` |
-| `SW[2:0]` | Direção do scroll (usado com `KEY[2]`): `000` direita, `001` esquerda, `011` cima, `111` baixo |
-| `SW[3]` | Flip horizontal do sprite 0 |
-| `SW[4]` | Flip vertical do sprite 0 |
-| `SW[5]` | `1` = modo sprite (move sprite 0 com `SW[9:6]`); `0` = modo polígono (move polígonos  com `SW[9:6]`) |
-| `SW[9:6]` | Direção do movimento ((sprite: `1000` direita, `0100` esquerda, `0010` baixo, `0001` cima) ou (polígono: `1000` Triangulo direita, `0100` Triangulo esquerda, `0010` Retangulo direita, `0001` Retangulo esquerda), conforme `SW[5]`) |
+```sh
+sudo ./gpuctl --fpga sprite 0 160 144 0 0x19
+sudo ./gpuctl --fpga sprite 0 220 144 0 0x19
+sudo ./gpuctl --fpga tile 5 5 1
+sudo ./gpuctl --fpga scroll 16 8
+sudo ./gpuctl --fpga rect 100 80 150 120 11
+sudo ./gpuctl --fpga triangle 180 160 260 160 220 100 10
+sudo ./gpuctl --fpga palette 10 0x3366ff
+sudo ./gpuctl --fpga animate 120
+sudo ./gpuctl --fpga status
+```
 
-> Conforme o enunciado, botões/chaves/LEDs são usados exclusivamente para
-> demonstração neste entregável, e não substituem a futura interface MMIO
-> que será implementada pelo driver Linux em etapas posteriores.
+Esses exemplos movem o personagem, substituem um tile, deslocam o fundo, alteram os polígonos e a paleta e executam uma animação.
+
+As coordenadas gráficas usam a resolução lógica **320 × 240**, exibida em VGA **640 × 480**. No comando `tile`, os dois primeiros parâmetros são coluna e linha do mapa, não pixels. Há um retângulo e um triângulo configuráveis; novos comandos alteram esses objetos, inclusive os utilizados na casa.
+
+Os comandos de alto nível acima já solicitam a apresentação da imagem. Não é necessário executar `present` separadamente. Para restaurar a cena conhecida:
+
+```sh
+sudo ./gpuctl --fpga demo
+```
+
+## 6. Demonstração B — carregar e executar demo.hex / ISA
+
+Para uma sequência de avaliação reproduzível, comece restaurando a demonstração externa. Depois carregue o programa:
+
+```sh
+sudo ./gpuctl --fpga demo
+sudo ./gpuctl --fpga load ../programs/demo.hex
+sudo ./gpuctl --fpga status
+```
+
+O comando `load` realiza a preparação do núcleo, transfere o arquivo para a memória de instruções e **inicia a execução automaticamente a partir do PC inicial**. Não é necessário pressionar um botão nem enviar um comando de start adicional.
+
+A CPU da FPGA busca as instruções, carrega o IR, executa a ISA e envia os comandos `OUT` ao motor gráfico. A ferramenta aguarda `HALT` e o término da atividade da GPU/fila antes de retornar.
+
+### O que observar
+
+- `load` termina com `OK`.
+- O status apresenta `ERROR=0`.
+- O bit `CPU_DONE` de `STATUS` (bit 1, máscara `0x2`) indica o término da CPU.
+- `OUT_COUNT` registra as saídas geradas pelo programa; `PC` e `IR` permitem inspecionar o estado final.
+- A imagem muda de acordo com o programa: reposicionamento de sprites e polígonos, alteração de uma entrada da paleta e do tilemap e deslocamento do fundo.
+
+## 7. Documentação técnica
+
+- [Arquitetura](integracao_hps_professor/docs/ARQUITETURA.md)
+- [ISA e formato das instruções](integracao_hps_professor/docs/ISA.md)
+- [Comandos e recursos gráficos](integracao_hps_professor/docs/GRAFICOS.md)
+- [Protocolo da mailbox e adaptações da base HPS](integracao_hps_professor/docs/PROTOCOLO_HPS.md)
+- [Mapa interno de registradores GPU3](integracao_hps_professor/docs/MMIO.md)
+- [Fonte do programa demonstrado](integracao_hps_professor/programs/demo.asm)
+- [Origem e licenças dos componentes](integracao_hps_professor/docs/THIRD_PARTY.md)
+
+O mapa GPU3 é interno e acessado por operações da mailbox. Seus offsets não devem ser somados diretamente à base da RAM como se fossem periféricos expostos na ponte.

@@ -1,0 +1,11 @@
+2 11 gpu_mailbox 4 fast 96 C:/Users/User/Desktop/Programas/PBL SD 26.2/PBL-SD-26.2/integracao_hps_professor/simulation/work 0 0 131072 0 683 0
+2 22 ALTERA_DEVICE_FAMILIES 4 fast 57 C:/altera_lite/25.1std/questa_fse/intel/verilog/altera_mf 0 0 655360 0 4279 0
+2 31 ALTERA_MF_MEMORY_INITIALIZATION 4 fast 57 C:/altera_lite/25.1std/questa_fse/intel/verilog/altera_mf 0 0 262144 0 2471 0
+1 15 altsyncram_body 4 fast 57 C:/altera_lite/25.1std/questa_fse/intel/verilog/altera_mf 0 0 1966080 0 14623 0
+1 10 altsyncram 4 fast 57 C:/altera_lite/25.1std/questa_fse/intel/verilog/altera_mf 0 0 2097152 0 15295 0
+1 27 soc_system_onchip_memory2_0 4 fast 96 C:/Users/User/Desktop/Programas/PBL SD 26.2/PBL-SD-26.2/integracao_hps_professor/simulation/work 0 0 2097152 0 15477 0
+2 7 gpu_cpu 4 fast 96 C:/Users/User/Desktop/Programas/PBL SD 26.2/PBL-SD-26.2/integracao_hps_professor/simulation/work 0 0 0 0 642 0
+2 8 gpu_host 4 fast 96 C:/Users/User/Desktop/Programas/PBL SD 26.2/PBL-SD-26.2/integracao_hps_professor/simulation/work 0 0 131072 0 1206 0
+2 12 gpu_graphics 4 fast 96 C:/Users/User/Desktop/Programas/PBL SD 26.2/PBL-SD-26.2/integracao_hps_professor/simulation/work 0 0 262144 0 1819 0
+2 10 gpu_system 4 fast 96 C:/Users/User/Desktop/Programas/PBL SD 26.2/PBL-SD-26.2/integracao_hps_professor/simulation/work 0 0 393216 0 3104 0
+1 14 tb_gpu_mailbox 4 fast 96 C:/Users/User/Desktop/Programas/PBL SD 26.2/PBL-SD-26.2/integracao_hps_professor/simulation/work 0 0 2752512 0 20203 0

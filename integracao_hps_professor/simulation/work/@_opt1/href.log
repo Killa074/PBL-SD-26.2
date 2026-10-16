@@ -1,0 +1,18 @@
+BEGIN 1:gpu_host:fast:simulation/work
+    out_count :  1:tb_gpu_mailbox:fast:simulation/work
+    fifo_count :  1:tb_gpu_mailbox:fast:simulation/work
+END 
+BEGIN 1:gpu_mailbox:fast:simulation/work
+    state :  1:tb_gpu_mailbox:fast:simulation/work
+END 
+BEGIN 1:gpu_graphics:fast:simulation/work
+    front_bank :  1:tb_gpu_mailbox:fast:simulation/work
+    scroll_x :  1:tb_gpu_mailbox:fast:simulation/work
+    framebuffer0 :  1:tb_gpu_mailbox:fast:simulation/work
+    framebuffer1 :  1:tb_gpu_mailbox:fast:simulation/work
+END 
+BEGIN 1:gpu_system:fast:simulation/work
+    graphics_error :  1:tb_gpu_mailbox:fast:simulation/work
+    command_ready :  1:tb_gpu_mailbox:fast:simulation/work
+    frame_count :  1:tb_gpu_mailbox:fast:simulation/work
+END 

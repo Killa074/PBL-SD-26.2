@@ -1,0 +1,1 @@
+C:/altera_lite/25.1std/questa_fse/win64/VisualizerRls/bin/viscom.exe -nolock -quiet -jmem_size 934320 simulation/work.tb_gpu_system -quiet -auto_acc_if_foreign -work simulation/work -L altera_mf_ver -allow_unnamed -o _opt2 -id 1-c03532a55c51-6ac948c4-2b-6924

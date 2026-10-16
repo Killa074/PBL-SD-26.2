@@ -1,0 +1,48 @@
+# ** Note: (vsim-220) 'C:/altera_lite/25.1std/questa_fse/win64/../modelsim.ini' is used as the ini file.
+# vsim -c -voptargs="+acc" -L altera_mf_ver -lib simulation/work tb_gpu_mailbox -l simulation/mailbox_diagnostic.log -do "run 100 us; examine /tb_gpu_mailbox/mb/state; examine /tb_gpu_mailbox/seq; examine /tb_gpu_mailbox/dut/frame_count; quit -f" 
+# Start time: 16:53:58 on Oct 09,2026
+# ** Note: (vsim-3812) Design is being optimized...
+# ** Warning: (vopt-10908) Some optimizations are turned off because the +acc switch is in effect.
+# ** Note: (vopt-220) 'C:/altera_lite/25.1std/questa_fse/win64/../modelsim.ini' is used as the ini file.
+# ** Note: (vopt-143) Recognized 1 FSM in module "gpu_graphics(fast)".
+# ** Note: (vopt-143) Recognized 1 FSM in module "gpu_mailbox(fast)".
+# ** Note: (vopt-143) Recognized 1 FSM in module "gpu_cpu(fast)".
+# ** Warning: professor/soc_system/synthesis/submodules/soc_system_onchip_memory2_0.v(72): (vopt-2685) [TFMPC] - Too few port connections for 'the_altsyncram'.  Expected 23, found 22.
+# ** Warning: professor/soc_system/synthesis/submodules/soc_system_onchip_memory2_0.v(72): (vopt-2718) [TFMPC] - Missing connection for port 'eccstatus'.
+# ** Note: (vsim-12126) Error and warning message counts have been restored: Errors=0, Warnings=3.
+# //  Questa Altera Starter FPGA Edition-64
+# //  Version 2025.2 win64 May 31 2025
+# //
+# // Unpublished work. Copyright 2025 Siemens
+# //
+# // This material contains trade secrets or otherwise confidential information
+# // owned by Siemens Industry Software Inc. or its affiliates (collectively,
+# // "SISW"), or its licensors. Access to and use of this information is strictly
+# // limited as set forth in the Customer's applicable agreements with SISW.
+# //
+# // This material may not be copied, distributed, or otherwise disclosed outside
+# // of the Customer's facilities without the express written permission of SISW,
+# // and may not be used in any way not expressly authorized by SISW.
+# //
+# Loading sv_std.std
+# Loading work.tb_gpu_mailbox(fast)
+# Loading work.gpu_mailbox(fast)
+# Loading work.soc_system_onchip_memory2_0(fast)
+# Loading altera_mf_ver.altsyncram(fast)
+# Loading altera_mf_ver.altsyncram_body(fast)
+# Loading altera_mf_ver.ALTERA_DEVICE_FAMILIES(fast)
+# Loading altera_mf_ver.ALTERA_MF_MEMORY_INITIALIZATION(fast)
+# Loading work.gpu_system(fast)
+# Loading work.gpu_host(fast)
+# Loading work.gpu_cpu(fast)
+# Loading work.gpu_graphics(fast)
+# run 100 us
+#  examine /tb_gpu_mailbox/mb/state
+# 6'h04
+#  examine /tb_gpu_mailbox/seq
+# 32'h0000000a
+#  examine /tb_gpu_mailbox/dut/frame_count
+# 32'h00000000
+#  quit -f
+# End time: 16:54:02 on Oct 09,2026, Elapsed time: 0:00:04
+# Errors: 0, Warnings: 3

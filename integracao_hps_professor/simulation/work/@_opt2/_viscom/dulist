@@ -1,0 +1,5 @@
+1 7 gpu_cpu 4 fast 96 C:/Users/User/Desktop/Programas/PBL SD 26.2/PBL-SD-26.2/integracao_hps_professor/simulation/work 0 0 131072 0 642 0
+1 8 gpu_host 4 fast 96 C:/Users/User/Desktop/Programas/PBL SD 26.2/PBL-SD-26.2/integracao_hps_professor/simulation/work 0 0 262144 0 1206 0
+1 12 gpu_graphics 4 fast 96 C:/Users/User/Desktop/Programas/PBL SD 26.2/PBL-SD-26.2/integracao_hps_professor/simulation/work 0 0 262144 0 1819 0
+1 10 gpu_system 4 fast 96 C:/Users/User/Desktop/Programas/PBL SD 26.2/PBL-SD-26.2/integracao_hps_professor/simulation/work 0 0 524288 0 3104 0
+1 13 tb_gpu_system 4 fast 96 C:/Users/User/Desktop/Programas/PBL SD 26.2/PBL-SD-26.2/integracao_hps_professor/simulation/work 0 0 524288 0 3288 0
