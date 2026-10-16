@@ -63,7 +63,7 @@ A integração utiliza a **ponte principal HPS-to-FPGA**, com RAM compartilhada 
 5. Conecte alimentação, USB-Blaster, rede e monitor VGA. Preserve o cartão SD já preparado pelo laboratório.
 6. Abra **Tools > Programmer**.
 7. Em **Hardware Setup**, selecione o USB-Blaster correspondente à placa.
-8. Em **Hardware Setup**, selecione **Auto Detect** e **5CSEMA5**. Na linha do dispositivo FPGA Cyclone V, selecione **Change File** ou **Add File**, conforme a configuração do Programmer, e escolha:
+8. Selecione **Auto Detect** e **5CSEMA5**. Na linha do dispositivo FPGA Cyclone V, selecione **Change File** ou **Add File**, conforme a configuração do Programmer, e escolha:
    ```text
    integracao_hps_professor/output_files/pbl_hps_professor.sof
    ```
